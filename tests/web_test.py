@@ -1,13 +1,9 @@
 import pytest
-<<<<<<< Updated upstream
-from flask import url_for
-=======
 import json
 import datetime
 import smtplib
 from flask import url_for
 from app.views import  get_date_to_use, get_exchange_rate, save_exchange_rate, send_email_pin
->>>>>>> Stashed changes
 
 def test_login(client, monkeypatch):
     monkeypatch.setattr("app.views.send_email_pin", lambda email, pin: None)
@@ -59,9 +55,6 @@ def test_send_email_pin(monkeypatch):
 def test_login_route_get(client):
     response = client.get("/login")
     assert response.status_code == 200
-<<<<<<< Updated upstream
-    assert b"<title>Bank Home</title>" in response.data
-=======
     assert b'Login' in response.data
 
 def test_get_date_to_use():
@@ -100,4 +93,3 @@ def test_save_exchange_rate(tmp_path):
     
     assert test_date in data
     assert data[test_date]
->>>>>>> Stashed changes
