@@ -103,7 +103,7 @@ def index():
 
 def send_email_pin(email, pin):
     sender_email = "testing.stin1236@gmail.com"
-    sender_password = "heslo1236"
+    sender_password = "stymouzpkufgapbc"
     receiver_email = email
     message = f"Subject: Your login pin\n\nYour pin is: {pin}"
     with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
