@@ -9,7 +9,7 @@ def test_update_balance(tmp_path, monkeypatch):
     exchange_rate_file = tmp_path / "exchange_rate_test.json"
     exchange_rate_file.write_text('{"01.01.2023": {"USD": {"amount": 1, "rate": 20}, "CZK": {"amount": 1, "rate": 1}}}')
 
-    date_to_use = "04.04.2023"
+    date_to_use = "15.05.2023"
 
     # Temporarily change the behavior of the get_exchange_rate() and get_date_to_use() functions
     monkeypatch.setattr("app.views.get_exchange_rate", lambda: json.loads(exchange_rate_file.read_text()))
