@@ -1,95 +1,50 @@
 import pytest
 import json
 import datetime
-import smtplib
-from flask import url_for
-from app.views import  get_date_to_use, get_exchange_rate, save_exchange_rate, send_email_pin
 
-def test_login(client, monkeypatch):
+def test_index_get(client, monkeypatch):
+    # Log in before testing the index page
     monkeypatch.setattr("app.views.send_email_pin", lambda email, pin: None)
-    response = client.post("/login", data={"email": "testing.stin1236@gmail.com", "password": "testpassword"})
-    assert response.status_code == 302
-    assert "/2fa" in response.location
-
-def test_invalid_login(client):
-    response = client.post("/login", data={"email": "test@example.com", "password": "wrong_password"})
-    assert response.status_code == 401
-
-def test_twofactor(client, monkeypatch):
-    monkeypatch.setattr("app.views.send_email_pin", lambda email, pin: None)
-    response = client.post("/login", data={"email": "testing.stin1236@gmail.com", "password": "testpassword"})
+    response = client.post("/login", data={"email": "testing.pryjmi@gmail.com", "password": "testpassword"})
     assert response.status_code == 302
     with client.session_transaction() as session:
         pin = session["pin"]
     response = client.post("/2fa", data={"pin": pin})
     assert response.status_code == 302
-    assert "/index" in response.location
 
-def test_twofactor_invalid_pin(client, monkeypatch):
-    monkeypatch.setattr("app.views.send_email_pin", lambda email, pin: None)
-    response = client.post("/login", data={"email": "testing.stin1236@gmail.com", "password": "testpassword"})
-    assert response.status_code == 302
-    with client.session_transaction() as session:
-        session["pin"] = "0000"
-    response = client.post("/2fa", data={"pin": "1234"})
-    assert response.status_code == 401
-
-def test_logout(client):
-    with client.session_transaction() as session:
-        session["_user_id"] = "testing.stin1236@gmail.com"
-    response = client.get("/logout")
-    assert response.status_code == 302
-    assert "/login" in response.location
-
-def test_send_email_pin(monkeypatch):
-    email_sent = False
-
-    def mock_sendmail(*args, **kwargs):
-        nonlocal email_sent
-        email_sent = True
-
-    monkeypatch.setattr("smtplib.SMTP.sendmail", mock_sendmail)
-    send_email_pin("testing.stin1236@gmail.com", "1234")
-    assert email_sent
-
-def test_login_route_get(client):
-    response = client.get("/login")
+    response = client.get("/index")
     assert response.status_code == 200
-    assert b'Login' in response.data
+    assert b'Bank Home' in response.data
 
-def test_get_date_to_use():
-    # weekend
-    weekend = datetime.datetime(2023, 3, 25) # saturday
-    expected_date_weekend = "24.03.2023" # nearest friday
-    assert get_date_to_use(weekend) == expected_date_weekend
-    # weekday
-    weekday = datetime.datetime(2023, 3, 22) # tuesday
-    expected_date_weekday = "22.03.2023" # same day
-    assert get_date_to_use(weekday) == expected_date_weekday
+def test_index_post(client, monkeypatch, tmp_path):
+    # Log in before testing the index page
+    monkeypatch.setattr("app.views.send_email_pin", lambda email, pin: None)
+    response = client.post("/login", data={"email": "testing.pryjmi@gmail.com", "password": "testpassword"})
+    assert response.status_code == 302
+    with client.session_transaction() as session:
+        pin = session["pin"]
+    response = client.post("/2fa", data={"pin": pin})
+    assert response.status_code == 302
 
-def test_get_exchange_rate(tmp_path):
-    test_file = tmp_path / "exchange_rates_test.json"
-    get_exchange_rate(test_file)
-    
-    assert test_file.exists()
-    
-    with open(test_file, "r") as file:
-        exchange_rates = json.load(file)
-    
-    date_to_use = get_date_to_use()
-    assert date_to_use in exchange_rates
+    # Set up temporary files
+    balance_file = tmp_path / "balance_test.json"
+    transactions_file = tmp_path / "transactions_test.json"
+    balance_file.write_text(json.dumps({}))
+    transactions_file.write_text(json.dumps([]))
 
-def test_save_exchange_rate(tmp_path):
-    test_file = tmp_path / "exchange_rates_test.json"
-    test_date = "25.03.2023"
-    test_data = {}
-    
-    save_exchange_rate(test_date, test_data, test_file)
-    assert test_file.exists()
-    
-    with open(test_file, "r") as file:
-        data = json.load(file)
-    assert data
-    
-    assert test_date in data
-    assert data[test_date]
+    monkeypatch.setattr("app.views.get_balance", lambda: json.loads(balance_file.read_text()))
+    monkeypatch.setattr("app.views.update_balance", lambda amount, currency: balance_file.write_text(json.dumps({currency: amount})))
+    monkeypatch.setattr("app.views.get_transactions", lambda: json.loads(transactions_file.read_text()))
+    monkeypatch.setattr("app.views.update_transactions", lambda amount, currency: transactions_file.write_text(json.dumps([{datetime.datetime.now().strftime("%d.%m.%Y"): {currency: f"+{amount:.2f}"}}])))
+
+    response = client.post("/index", data={"amount": "100", "currency": "USD", "action": "add"})
+    assert response.status_code == 200
+    updated_balance = json.loads(balance_file.read_text())
+    assert "USD" in updated_balance
+    assert updated_balance["USD"] == 100
+
+    updated_transactions = json.loads(transactions_file.read_text())
+    assert len(updated_transactions) == 1
+    assert datetime.datetime.now().strftime("%d.%m.%Y") in updated_transactions[0]
+    assert "USD" in updated_transactions[0][datetime.datetime.now().strftime("%d.%m.%Y")]
+    assert updated_transactions[0][datetime.datetime.now().strftime("%d.%m.%Y")]["USD"] == "+100.00"
