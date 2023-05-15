@@ -5,7 +5,7 @@ import datetime
 def test_index_get(client, monkeypatch):
     # Log in before testing the index page
     monkeypatch.setattr("app.views.send_email_pin", lambda email, pin: None)
-    response = client.post("/login", data={"email": "testing.pryjmi@gmail.com", "password": "testpassword"})
+    response = client.post("/login", data={"email": "testing.stin1236@gmail.com", "password": "testpassword"})
     assert response.status_code == 302
     with client.session_transaction() as session:
         pin = session["pin"]
@@ -19,7 +19,7 @@ def test_index_get(client, monkeypatch):
 def test_index_post(client, monkeypatch, tmp_path):
     # Log in before testing the index page
     monkeypatch.setattr("app.views.send_email_pin", lambda email, pin: None)
-    response = client.post("/login", data={"email": "testing.pryjmi@gmail.com", "password": "testpassword"})
+    response = client.post("/login", data={"email": "testing.stin1236@gmail.com", "password": "testpassword"})
     assert response.status_code == 302
     with client.session_transaction() as session:
         pin = session["pin"]
