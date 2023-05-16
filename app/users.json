@@ -1,11 +1,17 @@
 {
     "testing.stin1236@gmail.com": {
-        "first_name": "matěj", 
-        "last_name": "hampl", 
+        "first_name": "test", 
+        "last_name": "surname",
         "password": "testpassword"
     },
     "test@example.com": {
-        "username": "Test User",
+        "first_name": "Test",
+        "last_rname": "User",
         "password": "test_password"
+    },
+    "matej.hampl@tul.cz": {
+        "first_name": "Matěj",
+        "last_name": "Hampl",
+        "password": "heslo"
     }
 }
