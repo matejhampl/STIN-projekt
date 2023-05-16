@@ -88,8 +88,6 @@ def save_exchange_rate(date_to_use, exchange_rates, path):
     with open(path, "w") as file:
         json.dump(exchange_rates, file)
 
-
-
 ##################################################### BALANCE ##############################################################
 
 def get_balance(user_email, balance_file_path="app/balance.json"):
@@ -101,7 +99,6 @@ def update_balance(user_email, amount, currency, balance_file_path="app/balance.
     with open(balance_file_path, "r") as file:
         all_balances = json.load(file)
     balance = all_balances.get(user_email, {})
-
     exchange_rate = get_exchange_rate()
     date_to_use = get_date_to_use()
     msg = ""
@@ -128,6 +125,9 @@ def update_balance(user_email, amount, currency, balance_file_path="app/balance.
         json.dump(all_balances, file)
 
     return msg, currency, amount
+
+    return msg, currency, amount
+
 
 ############################################### TRANSACTION HISTORY #########################################################
 
@@ -184,7 +184,7 @@ def index():
 
     balance = get_balance(user_email)
     transactions = get_transactions(user_email)
-
+    
     return render_template("index.html", user=current_user, balance=balance, transactions=transactions, err=err)
 
 ################################################### AUTHENTICATION ##########################################################
