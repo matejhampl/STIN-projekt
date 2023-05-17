@@ -1,5 +1,6 @@
 from flask import render_template, Flask, jsonify, request, redirect, url_for, session, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
+from apscheduler.schedulers.background import BackgroundScheduler
 import datetime
 import requests
 import os
@@ -24,18 +25,15 @@ class User(UserMixin):
         self.password = password
         self.pin = None
 
+
 @login_manager.user_loader
 def load_user(user_id):
     with open("app/users.json", "r") as file:
         users = json.load(file)
-    return next(
-        (
-            User(user_id, user_data["first_name"], user_data["last_name"], user_data["password"])
-            for email, user_data in users.items()
-            if user_id == email
-        ),
-        None,
-    )
+    user_data = users.get(user_id)
+    if user_data:
+        return User(user_id, user_data["first_name"], user_data["last_name"], user_data["password"])
+    return None
 
 ################################################### FETCHING RATES #########################################################
 
@@ -49,8 +47,9 @@ def get_date_to_use(now=None):
         date_to_use = friday.date()
     else:
         date_to_use = now.date()
-    
+
     return date_to_use.strftime("%d.%m.%Y")
+
 
 def get_exchange_rate(path=None):
     date_to_use = get_date_to_use()
@@ -83,10 +82,12 @@ def save_exchange_rate(date_to_use, exchange_rates, path):
             'amount': float(amount),
             'rate': float(rate.replace(",", "."))
         }
+    parsed_data["CZK"] = {"amount": 1.0, "rate": 1.0}
     exchange_rates[date_to_use] = parsed_data
 
     with open(path, "w") as file:
         json.dump(exchange_rates, file)
+
 
 ##################################################### BALANCE ##############################################################
 
@@ -95,9 +96,11 @@ def get_balance(user_email, balance_file_path="app/balance.json"):
         balances = json.load(file)
     return balances.get(user_email, {})
 
+
 def update_balance(user_email, amount, currency, balance_file_path="app/balance.json"):
     with open(balance_file_path, "r") as file:
         all_balances = json.load(file)
+    
     balance = all_balances.get(user_email, {})
     exchange_rate = get_exchange_rate()
     date_to_use = get_date_to_use()
@@ -121,13 +124,11 @@ def update_balance(user_email, amount, currency, balance_file_path="app/balance.
         balance[currency] += amount
 
     all_balances[user_email] = balance
+
     with open(balance_file_path, "w") as file:
         json.dump(all_balances, file)
 
     return msg, currency, amount
-
-    return msg, currency, amount
-
 
 ############################################### TRANSACTION HISTORY #########################################################
 
@@ -135,6 +136,7 @@ def get_transactions(user_email, transactions_file_path="app/transactions.json")
     with open(transactions_file_path, "r") as file:
         all_transactions = json.load(file)
     return all_transactions.get(user_email, [])
+
 
 def update_transactions(user_email, amount, currency, transactions_file_path="app/transactions.json"):
     with open(transactions_file_path, "r") as file:
@@ -145,17 +147,13 @@ def update_transactions(user_email, amount, currency, transactions_file_path="ap
     new_transaction = {
         date: {
             currency: value
-            }
         }
+    }
 
-    if user_email in all_transactions:
-        all_transactions[user_email].append(new_transaction)
-    else:
-        all_transactions[user_email] = [new_transaction]
+    all_transactions.setdefault(user_email, []).append(new_transaction)
 
     with open(transactions_file_path, "w") as file:
         json.dump(all_transactions, file)
-
 
 ###################################################### HOMEPAGE ############################################################
 
@@ -163,7 +161,7 @@ def update_transactions(user_email, amount, currency, transactions_file_path="ap
 @app.route("/index", methods=["GET", "POST"])
 @login_required
 def index():
-    get_exchange_rate()
+    exchange_rate = get_exchange_rate()
     user_email = current_user.id
     balance = get_balance(user_email)
     transactions = get_transactions(user_email)
@@ -184,8 +182,10 @@ def index():
 
     balance = get_balance(user_email)
     transactions = get_transactions(user_email)
+
+    date_to_use = get_date_to_use()
     
-    return render_template("index.html", user=current_user, balance=balance, transactions=transactions, err=err)
+    return render_template("index.html", user=current_user, balance=balance, transactions=transactions, err=err, exchange_rate=exchange_rate, get_date_to_use=get_date_to_use, date_to_use=date_to_use)
 
 ################################################### AUTHENTICATION ##########################################################
 
@@ -216,6 +216,7 @@ def login():
     send_email_pin(email, pin)
     session["pin"] = str(pin)
     session["email"] = email
+    session["pin_expiry"] = (datetime.datetime.now() + datetime.timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
     return redirect(url_for("twofactor"))
 
 @app.route("/2fa", methods=["GET", "POST"])
@@ -223,6 +224,11 @@ def login():
 def twofactor():
     if request.method == "POST":
         pin = request.form["pin"]
+        expiry = datetime.datetime.strptime(session["pin_expiry"], "%Y-%m-%d %H:%M:%S")
+
+        if datetime.datetime.now() > expiry:
+            logout_user()
+            return redirect(url_for("login"))
         if pin == session["pin"]:
             return redirect(url_for("index"))
         else:
