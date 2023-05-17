@@ -12,7 +12,8 @@
     <body>
         <nav>
             <ul>
-                <li>Welcome {{user.first_name}} {{user.last_name}}</li>
+                <li>Vítejte {{user.first_name}} {{user.last_name}}</li>
+                <li>Dnešní datum: {{ date_to_use }}</li>
                 <li><a href="{{ url_for('logout') }}">Log Out</a></li>
             </ul>
         </nav>
@@ -21,8 +22,8 @@
                 <div class="col">
                     <div class="card">
                         <div class="card-body">
-                            <h4 class="card-title">Balance</h4>
-                            <h6 class="card-subtitle">All currencies</h6>
+                            <h4 class="card-title">Zůstatek</h4>
+                            <h6 class="card-subtitle">Všechny měny</h6>
                             <ul class="card-list">
                                 <li class="balance">
                                     {% for currency, value in balance.items() %}
@@ -38,8 +39,8 @@
                 <div class="col-sm-8 order-lg-1">
                     <div class="card">
                         <div class="card-body">
-                            <h4 class="card-title">Transaction history</h4>
-                            <h6 class="card-subtitle">All time</h6>
+                            <h4 class="card-title">Historie Plateb</h4>
+                            <h6 class="card-subtitle">Od doby ledové</h6>
                             <table class="table table-striped">
                                 <tbody>
                                     {% for transaction in transactions[::-1] %}
@@ -72,18 +73,18 @@
                                 <div class="row">
                                     <div class="col">
                                         <select name="currency" required class="form-select">
-                                            <option value="CZK">CZK</option>
-                                            <option value="EUR">EUR</option>
-                                            <option value="USD">USD</option>
+                                            {% for currency, rate_data in exchange_rate[date_to_use].items() %}
+                                                <option value="{{ currency }}">{{ currency }} {{ rate_data.shortcut }}</option>
+                                            {% endfor %}
                                         </select>
                                     </div>
-                                </div>
+                                </div>                                
                                 <div class="row mt-2">
                                     <div class="col">
-                                        <button class="btn btn-primary btn-block mx-1" type="submit" name="action" value="pay">Pay</button>
+                                        <button class="btn btn-primary btn-block mx-1" type="submit" name="action" value="pay">Zaplatit</button>
                                     </div>
                                     <div class="col">
-                                        <button class="btn btn-success btn-block mx-1" type="submit" name="action" value="receive">Receive</button>
+                                        <button class="btn btn-success btn-block mx-1" type="submit" name="action" value="receive">Dostat 💸💵</button>
                                     </div>
                                     <br>
                                     {% if err %}
