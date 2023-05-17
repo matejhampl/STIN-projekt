@@ -1,5 +1,6 @@
 from flask import render_template, Flask, jsonify, request, redirect, url_for, session, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
+from apscheduler.schedulers.background import BackgroundScheduler
 import datetime
 import requests
 import os
@@ -216,6 +217,7 @@ def login():
     send_email_pin(email, pin)
     session["pin"] = str(pin)
     session["email"] = email
+    session["pin_expiry"] = (datetime.datetime.now() + datetime.timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
     return redirect(url_for("twofactor"))
 
 @app.route("/2fa", methods=["GET", "POST"])
@@ -223,6 +225,11 @@ def login():
 def twofactor():
     if request.method == "POST":
         pin = request.form["pin"]
+        expiry = datetime.datetime.strptime(session["pin_expiry"], "%Y-%m-%d %H:%M:%S")
+
+        if datetime.datetime.now() > expiry:
+            logout_user()
+            return redirect(url_for("login"))
         if pin == session["pin"]:
             return redirect(url_for("index"))
         else:
