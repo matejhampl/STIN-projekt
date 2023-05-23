@@ -67,7 +67,8 @@
                             <form method="POST" action="{{ url_for('index') }}" class="w-100">
                                 <div class="row mb-2">
                                     <div class="col">
-                                        <input type="number" step="0.01" name="amount" required class="form-control">
+                                        <input type="number" step="0.01" name="amount" required class="form-control" 
+                                                oninput="this.value = Math.abs(this.value)" max="1000000">
                                     </div>
                                 </div>
                                 <div class="row">
