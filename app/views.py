@@ -109,15 +109,20 @@ def update_balance(user_email, amount, currency, balance_file_path="app/balance.
     if currency not in balance:
         balance[currency] = 0
 
-    if amount < 0 and balance[currency] < -amount:
+    if amount < 0 and balance[currency] < -amount: # pokud je amount zaporny a na uctu je mene nez amount
         if currency not in exchange_rate[date_to_use]:
             msg = "Currency not supported."
+
         else:
-            amount_in_czk = -amount * (exchange_rate[date_to_use][currency]["rate"] / exchange_rate[date_to_use][currency]["amount"])
-            if "CZK" in balance and balance["CZK"] >= amount_in_czk:
-                balance["CZK"] -= amount_in_czk
+            rest = amount + balance[currency]
+            rest_in_czk = -rest * (exchange_rate[date_to_use][currency]["rate"] / exchange_rate[date_to_use][currency]["amount"])
+            rest_in_czk *= 1.1 # 10% fee
+            if "CZK" in balance and balance["CZK"] >= rest_in_czk:
+                update_transactions(user_email, -balance[currency], currency)
+                balance[currency] = 0
+                balance["CZK"] -= rest_in_czk
                 currency = "CZK"
-                amount = -amount_in_czk
+                amount = -rest_in_czk
             else:
                 msg = "Not enough funds."
     else:
@@ -139,6 +144,8 @@ def get_transactions(user_email, transactions_file_path="app/transactions.json")
 
 
 def update_transactions(user_email, amount, currency, transactions_file_path="app/transactions.json"):
+    if amount == 0:
+        return
     with open(transactions_file_path, "r") as file:
         all_transactions = json.load(file)
 
