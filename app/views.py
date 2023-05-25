@@ -109,14 +109,13 @@ def update_balance(user_email, amount, currency, balance_file_path="app/balance.
     if currency not in balance:
         balance[currency] = 0
 
-    if amount < 0 and balance[currency] < -amount: # pokud je amount zaporny a na uctu je mene nez amount
+    if amount < 0 and abs(balance[currency]*1.1) < -amount: # pokud je amount zaporny a na uctu je mene nez amount
         if currency not in exchange_rate[date_to_use]:
             msg = "Currency not supported."
 
         else:
             rest = amount + balance[currency]
             rest_in_czk = -rest * (exchange_rate[date_to_use][currency]["rate"] / exchange_rate[date_to_use][currency]["amount"])
-            rest_in_czk *= 1.1 # 10% fee
             if "CZK" in balance and balance["CZK"] >= rest_in_czk:
                 update_transactions(user_email, -balance[currency], currency)
                 balance[currency] = 0
@@ -125,6 +124,15 @@ def update_balance(user_email, amount, currency, balance_file_path="app/balance.
                 amount = -rest_in_czk
             else:
                 msg = "Not enough funds."
+    elif amount < 0 and abs(balance[currency]*1.1) >= -amount:
+        if currency not in exchange_rate[date_to_use]:
+            msg = "Currency not supported."
+        else:
+            if balance[currency] > 0:
+                balance[currency] -= -amount
+            else:
+                msg = "Not enough funds."
+        
     else:
         balance[currency] += amount
 
