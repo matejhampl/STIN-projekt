@@ -119,9 +119,9 @@ def update_balance(user_email, amount, currency, balance_file_path="app/balance.
             if "CZK" in balance and balance["CZK"]*1.1 >= rest_in_czk:
                 update_transactions(user_email, -balance[currency], currency)
                 balance[currency] = 0
-                balance["CZK"] -= rest_in_czk
+                balance["CZK"] -= rest_in_czk*1.1
                 currency = "CZK"
-                amount = -rest_in_czk
+                amount = -rest_in_czk*1.1
             else:
                 msg = "Not enough funds."
     elif amount < 0 and abs(balance[currency]*1.1) >= -amount:
@@ -132,6 +132,7 @@ def update_balance(user_email, amount, currency, balance_file_path="app/balance.
                 rest = -amount - balance[currency]
                 rest = rest*0.1
                 balance[currency] -= -amount + rest
+                amount = amount*1.1
             else:
                 msg = "Not enough funds."
         
