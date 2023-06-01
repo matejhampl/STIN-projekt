@@ -116,7 +116,7 @@ def update_balance(user_email, amount, currency, balance_file_path="app/balance.
         else:
             rest = amount + balance[currency]
             rest_in_czk = -rest * (exchange_rate[date_to_use][currency]["rate"] / exchange_rate[date_to_use][currency]["amount"])
-            if "CZK" in balance and balance["CZK"] >= rest_in_czk:
+            if "CZK" in balance and balance["CZK"]*1.1 >= rest_in_czk:
                 update_transactions(user_email, -balance[currency], currency)
                 balance[currency] = 0
                 balance["CZK"] -= rest_in_czk
