@@ -129,7 +129,9 @@ def update_balance(user_email, amount, currency, balance_file_path="app/balance.
             msg = "Currency not supported."
         else:
             if balance[currency] > 0:
-                balance[currency] -= -amount
+                rest = -amount - balance[currency]
+                rest = rest*0.1
+                balance[currency] -= -amount + rest
             else:
                 msg = "Not enough funds."
         
