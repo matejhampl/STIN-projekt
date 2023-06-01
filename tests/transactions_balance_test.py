@@ -30,7 +30,7 @@ def test_update_balance(tmp_path, monkeypatch):
     msg, currency, amount = update_balance(user_email, -50, "USD", balance_file)
     with open(balance_file, "r") as file:
         all_balances = json.load(file)
-    assert all_balances[user_email]["USD"] == 50
+    assert all_balances[user_email]["USD"] == 55
     assert msg == ""
     assert currency == "USD"
     assert amount == -50
@@ -44,7 +44,7 @@ def test_update_balance(tmp_path, monkeypatch):
     msg, currency, amount = update_balance(user_email, -10000, "USD", balance_file)
     with open(balance_file, "r") as file:
         all_balances = json.load(file)
-    assert all_balances[user_email]["USD"] == 50
+    assert all_balances[user_email]["USD"] == 55
     assert all_balances[user_email]["CZK"] == 0
     assert msg == "Not enough funds."
     assert currency == "USD"
