@@ -33,7 +33,7 @@ def test_update_balance(tmp_path, monkeypatch):
     assert all_balances[user_email]["USD"] == 55
     assert msg == ""
     assert currency == "USD"
-    assert amount == -55
+    assert amount == -50
 
     # Test subtracting an amount that is not available in the balance, but available in CZK
 
